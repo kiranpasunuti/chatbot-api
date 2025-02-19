@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
 from sqlalchemy import create_engine, Column, Integer, String
@@ -32,6 +33,15 @@ model = genai.GenerativeModel(
 
 # Initialize FastAPI
 app = FastAPI()
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (change to specific domains in production)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Database setup
 DATABASE_URL = "sqlite:///./chat_history1.db"  # Change this for PostgreSQL or MySQL
@@ -79,4 +89,4 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         db.add(chat_entry)
         db.commit()
 
-    return {"code": 200,"data": clean_reply} 
+    return {"code": 200, "data": clean_reply}
