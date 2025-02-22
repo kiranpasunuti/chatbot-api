@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import google.generativeai as genai
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-import markdown
+import asyncio
 
 # Configure Gemini AI API
 genai.configure(api_key='AIzaSyC0uefxG-FBjr83Jj-RWGwSFUuvz_59gCk')
@@ -68,19 +69,24 @@ def get_db():
     finally:
         db.close()
 
-# Chatbot API endpoint
-@app.post("/chat")
-async def chat(request: ChatRequest, db: Session = Depends(get_db)):
-    response = model.generate_content(request.message)
+# Function to stream responses word by word
+async def generate_response_stream(message: str, db: Session):
+    response = model.generate_content(message)
     original_reply = response.text
-
-    # Ensure response is formatted correctly using Markdown
-    formatted_reply = markdown.markdown(original_reply)
 
     # Store response in the database
     if original_reply:
-        chat_entry = ChatHistory(prompt=request.message, response=formatted_reply)
+        chat_entry = ChatHistory(prompt=message, response=original_reply)
         db.add(chat_entry)
         db.commit()
 
-    return {"code": 200, "data": formatted_reply}
+    # Stream words one by one
+    words = original_reply.split()
+    for word in words:
+        yield word + " "
+        await asyncio.sleep(0.1)  # Adjust delay for smooth streaming
+
+# Chatbot API endpoint with streaming response
+@app.post("/chat")
+async def chat(request: ChatRequest, db: Session = Depends(get_db)):
+    return StreamingResponse(generate_response_stream(request.message, db), media_type="text/event-stream")
