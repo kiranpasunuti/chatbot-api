@@ -53,7 +53,7 @@ def get_db():
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     response = model.generate_content(request.message)
     original_reply = response.text
-    # clean_reply = original_reply.replace("\n", " ")
+    clean_reply = original_reply.replace(" ", " ")
 
     if original_reply:
         chat_entry = ChatHistory(prompt=request.message, response=original_reply)
