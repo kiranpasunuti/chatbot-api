@@ -55,7 +55,7 @@ REMOTE_DATABASE_URL = os.getenv(
 
 LOCAL_DATABASE_URL = os.getenv(
     "LOCAL_DATABASE_URL",
-    "mysql://root:12345@localhost:3306/chatbot"
+    "mysql+pymysql://root:12345@localhost:3306/chatbot"
 ) 
 
 remote_engine = create_engine(REMOTE_DATABASE_URL, pool_pre_ping=True)
