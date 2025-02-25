@@ -10,7 +10,8 @@ import os
 try:
     import pymysql
 except ModuleNotFoundError:
-    os.system("pip install pymysql")
+    os.system("pip install sqlite3")
+
 genai.configure(api_key='AIzaSyC0uefxG-FBjr83Jj-RWGwSFUuvz_59gCk')
 
 generation_config = {
@@ -48,13 +49,14 @@ REMOTE_DATABASE_URL = os.getenv(
     "postgresql://chatdb_qlfr_user:fda5wxAJpSWW8qvWTGzjNLcFuajHc3Yu@dpg-cuspqqrtq21c73b7hcrg-a.singapore-postgres.render.com/chatdb_qlfr"
 )
 
-LOCAL_DATABASE_URL = os.getenv(
-    "LOCAL_DATABASE_URL",
-    "mysql://root:12345@localhost:3306/chatbot"
-) 
+from sqlalchemy import create_engine
+
+LOCAL_DATABASE_URL = "sqlite:///chatbot.db"  # SQLite file-based database
+
+
 
 remote_engine = create_engine(REMOTE_DATABASE_URL, pool_pre_ping=True)
-local_engine = create_engine(LOCAL_DATABASE_URL, pool_pre_ping=True)
+local_engine = create_engine(LOCAL_DATABASE_URL, connect_args={"check_same_thread": False})
 RemoteSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=remote_engine)
 LocalSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=local_engine)
 
