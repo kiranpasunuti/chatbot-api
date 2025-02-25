@@ -7,14 +7,10 @@ from sqlalchemy import create_engine, Column, Integer, String,Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
-
-# ✅ Install MySQL Driver (pymysql)
 try:
     import pymysql
 except ModuleNotFoundError:
     os.system("pip install pymysql")
-
-# ✅ Configure API key for Gemini AI
 genai.configure(api_key='AIzaSyC0uefxG-FBjr83Jj-RWGwSFUuvz_59gCk')
 
 generation_config = {
@@ -37,7 +33,6 @@ model = genai.GenerativeModel(
     safety_settings=safety_settings
 )
 
-# ✅ FastAPI setup
 app = FastAPI()
 
 app.add_middleware(
@@ -55,7 +50,7 @@ REMOTE_DATABASE_URL = os.getenv(
 
 LOCAL_DATABASE_URL = os.getenv(
     "LOCAL_DATABASE_URL",
-    "mysql://root:12345@localhost:3306/chatbot"
+    "mysql+pymysql://root:12345@localhost:3306/chatbot"
 ) 
 
 remote_engine = create_engine(REMOTE_DATABASE_URL, pool_pre_ping=True)
@@ -69,7 +64,7 @@ class ChatHistory(Base):
     __tablename__ = 'chat_history'
     id = Column(Integer, primary_key=True, autoincrement=True)
     prompt = Column(Text, nullable=False)
-    response = Column(Text, nullable=False)  # Change from String to Text
+    response = Column(Text, nullable=False)  
 
 # ✅ Create tables in both databases
 def create_tables():
@@ -79,14 +74,11 @@ def create_tables():
         if "chat_history" not in inspector.get_table_names():
             Base.metadata.create_all(bind=engine)
 
-# Ensure table creation on startup
 create_tables()
 
 # ✅ Request model
 class ChatRequest(BaseModel):
     message: str
-
-# ✅ Dependency to get DB session
 def get_remote_db():
     db = RemoteSessionLocal()
     try:
@@ -101,7 +93,6 @@ def get_local_db():
     finally:
         db.close()
 
-# ✅ Function to format response properly
 def format_response(response_text: str) -> str:
     """Formats response to ensure proper markdown structure like ChatGPT."""
     lines = response_text.split("\n")
@@ -143,7 +134,6 @@ async def chat(request: ChatRequest, remote_db: Session = Depends(get_remote_db)
 
     return JSONResponse(content={"code": 200, "data": formatted_reply})
 
-# ✅ Fetch chat history (from both MySQL & PostgreSQL)
 @app.get("/chat/history")
 async def get_chat_history(remote_db: Session = Depends(get_remote_db), local_db: Session = Depends(get_local_db)):
     remote_history = remote_db.query(ChatHistory).all()
